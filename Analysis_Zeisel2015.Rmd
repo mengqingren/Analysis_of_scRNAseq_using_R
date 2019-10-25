@@ -102,18 +102,18 @@ sce <- sce[,!(libsize.drop | feature.drop | spike.drop)]
 data.frame(ByLibSize=sum(libsize.drop), ByFeature=sum(feature.drop), BySpike=sum(spike.drop), Remaining=ncol(sce))
 ```
 
-### Explore highly expressed genes, if required filter overexpressed features
+### Explore highly expressed genes
 
-We can also explore highly and overexpressed genes. The overexpressed genes, are those genes which expression is higher than others by several magnitudes. Overexpressed genes can bias further procedures such as clustering, therefore, they should be removed before performing downstream analysis. Note that one of the most common overexpressed gene is "Malat1".
+We can also explore highly and overexpressed genes. The overexpressed genes, are those genes which expression is higher than others by several magnitudes. Overexpressed genes can bias further procedures such as clustering, therefore, they should be removed before performing downstream analysis. Note that highly expressed genes mostly include spike-ins and mitochondrial genes. One of the most commonly overexpressed endogenous gene is "Malat1".
 
 ```{r}
 plotHighestExprs(sce, exprs_values = "counts")
 ```
 
 
-### Filter spike-in genes
+### Filter overexpressed features
 
-After quality control on cells, we can remove the expression of spike-in genes from the count matrix.
+In this step we will filter spike-in and mitochondrial genes as well as "Malat1".
 
 ```{r}
 sce=sce[-which(grepl("^ERCC-", rownames(sce))),]
@@ -167,11 +167,11 @@ Feature selection step is aimed at preserving biologically relevant information 
 ```{r}
 hvg_genes <- BrenneckeGetVariableGenes(cpm(sce), fdr = 0.01, minBiolDisp = 0.5)
 length(hvg_genes)
-sce=sce[hvg_genes,]
+sce_sub=sce[hvg_genes,]
 ```
 
 
-## Dimension reduction to project data into low-dimensional embedding
+### Dimension reduction to project data into low-dimensional embedding
 
 Dimension reduction can be used to visualize basic structure of the data or to reduce the number of features prior downstream analysis such as clustering. In contrast to the feature selection which extracts the most informative features, dimension reduction techniques projects the data into a new low-dimensional space that preserves the structure of the data. To reduce dataset dimensionality one can use PCA, tSNE or UMAP techniques implemented in **scater** package. Note that projections should be applied to normalized and log-transformed count matrices. PCA is a deterministic approach while tSNE and UMAP are stochastic - for reproducibility of tSNE and UMAP projections one has to set the seed for generating random variables.
 
@@ -208,7 +208,7 @@ If the cell annotation is available, one can measure the effectiveness of cluste
 adjustedRandIndex(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]],sce$level1class)
 ```
 
-## Exercise
+### Exercise
 How the clustering would change if you would use true number of cell populations (taken from annotation) in the inference of **SC3**?
 
 ## Additional plots
