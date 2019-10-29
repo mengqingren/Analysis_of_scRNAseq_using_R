@@ -209,7 +209,7 @@ adjustedRandIndex(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]],sce$lev
 ```
 
 ### Exercise
-How the clustering would change if you would use true number of cell populations (taken from annotation) in the inference of **SC3**?
+How the clustering would change if you would estimate the number of cell populations in **SC3** by using *sc3_estimate_k* function?
 
 ## Additional plots
 
