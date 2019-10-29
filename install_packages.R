@@ -5,10 +5,9 @@ BiocManager::install("scater")
 BiocManager::install("scran")
 BiocManager::install("M3Drop")
 BiocManager::install("SC3")
+BiocManager::install("monocle")
 
 install.packages('Seurat')
 install.packages("mclust")
 
-source("http://bioconductor.org/biocLite.R")
-biocLite()
-biocLite("monocle")
+
