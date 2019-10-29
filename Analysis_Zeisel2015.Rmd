@@ -80,7 +80,7 @@ rowData(sce)$pct_dropout_by_counts[1:5] #Percentage of dropouts per gene
 ```
 
 
-### Plot histograms based on quality metrics
+### Plot quality metrics
 
 One can plot histograms based on quality metrics to determine possible thresholds for cell/gene filterings. 
 
@@ -88,6 +88,15 @@ One can plot histograms based on quality metrics to determine possible threshold
 hist(sce$total_counts, breaks=50,  xlab="Library size", ylab="Number of cells")
 hist(sce$total_features_by_counts, xlab="Number of expressed genes", breaks=50,  ylab="Number of cells")
 hist(sce$pct_counts_Spike, xlab="ERCC proportion (%)", ylab="Number of cells", breaks=50)
+
+```
+
+We can also visualize some of the quality metrics on the PCA projected data.
+
+```{r}
+assay(sce, "logcounts_raw") <- log2(counts(sce)+1) 
+plotPCA(sce, run_args=c(exprs_values="logcounts_raw"), size_by="total_counts")
+
 ```
 
 ### Automatic filtering of outlier cells based on quality metrics
@@ -98,6 +107,11 @@ Alternatively, isOutlier function provides an automatic detection of low quality
 libsize.drop <- isOutlier(sce$total_counts, nmads=3, type="lower", log=TRUE)
 feature.drop <- isOutlier(sce$total_features_by_counts, nmads=3, type="lower", log=TRUE)
 spike.drop <- isOutlier(sce$pct_counts_Spike, nmads=3, type="higher")
+
+ind <- libsize.drop | feature.drop | spike.drop
+sce$removed=ind
+plotPCA(sce, colour_by="removed", run_args=c(exprs_values="logcounts_raw"), shape_by="removed")
+
 sce <- sce[,!(libsize.drop | feature.drop | spike.drop)]
 data.frame(ByLibSize=sum(libsize.drop), ByFeature=sum(feature.drop), BySpike=sum(spike.drop), Remaining=ncol(sce))
 ```
@@ -136,16 +150,18 @@ dim(sce)
 
 ### Perform standard normalization by computing counts per million (CPM)
 
-After quality control and filtering, one should normalize the dataset to remove potential technical bias. One strategy is to use CPM (Count Per Million) normalization which is a correction to remove the noise related to sequencing depth. CPM divides each count by its total sum (across all the genes) and multiplies by one million. In this way, each cell has the same total sum of the counts.   
+After quality control and filtering, one should normalize the dataset to remove potential technical bias. One strategy is to use CPM (Count Per Million) normalization which is a correction to remove the noise related to sequencing depth. CPM divides each count by its total sum (across all the genes) and multiplies by one million. In this way, each cell has the same total sum of the counts. We can plot PCA on the log-transformed CPM normalized counts and compare with previous PCA on the log raw counts.  
 
 ```{r}
 cpm(sce) <- calculateCPM(sce, use_size_factors=FALSE)
 cpm(sce)[1:4,1:4]
+assay(sce, "logcounts") <- log2(cpm(sce)+1) 
+plotPCA(sce,colour_by="level1class",run_args=c(exprs_values="logcounts"))
 ```
 
 ### Perform normalization using decnvolution method
 
-Another strategy, more suitable for scRNAseq data, is deconvolution method implemented in **scran** package. The deconvolution method normalizes data by cells-pooled size factors that account for dropout biases. More details about this normalization technique can be found in study https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0947-7.
+Another strategy, more suitable for scRNAseq data, is deconvolution method implemented in **scran** package. The deconvolution method normalizes data by cells-pooled size factors that account for dropout biases. More details about this normalization technique can be found in study https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0947-7. Similarly, we will plot PCA on the log **scran** normalized counts. 
 
 ```{r}
 set.seed(100)
@@ -153,6 +169,8 @@ clusters <- quickCluster(sce, min.size=200, min.mean=0.1, method="igraph")
 sce <- computeSumFactors(sce, cluster=clusters, min.mean=0.1)
 sce <- scater::normalize(sce, return_log = FALSE)
 normcounts(sce)[1:4,1:4]
+assay(sce, "logcounts") <- log2(normcounts(sce)+1) 
+plotPCA(sce,colour_by="level1class",run_args=c(exprs_values="logcounts"))
 ```
 
 
@@ -162,18 +180,18 @@ To deal with a large number of dimensions in scRNAseq dataset a feature selectio
 
 ### Feature selection to retrieve most variable genes
 
-Feature selection step is aimed at preserving biologically relevant information in the dataset and improving computational efficiency of downstream analyses. In most of the cases, it seeks for highly variable genes based on mean/variance relationship. **M3Drop** is one of the packages for automatic detection of most variable genes. It first calculates the mean and square coefficient of variation and fits the quadratic curve between the two variables. Then a chi-square test is used to find high variable genes which are significantly above the curve. We found CPM adjusted counts more appriopriate to use as input for this method rather than **scran** normalized values. 
+Feature selection step is aimed at preserving biologically relevant information in the dataset and improving computational efficiency of downstream analyses. In most of the cases, it seeks for highly variable genes based on mean/variance relationship. **M3Drop** is one of the packages for automatic detection of most variable genes. It first calculates the mean and square coefficient of variation and fits the quadratic curve between the two variables. Then a chi-square test is used to find high variable genes which are significantly above the curve. We found CPM adjusted counts more appriopriate to use as input for this method rather than **scran** normalized values. Note that when using order versions of **M3Drop** package (<1.10.0) the output is an array of genes instead of gene table with p-values.
 
 ```{r}
-hvg_genes <- BrenneckeGetVariableGenes(cpm(sce), fdr = 0.01, minBiolDisp = 0.5)
-length(hvg_genes)
-sce_sub=sce[hvg_genes,]
+hvg_table <- BrenneckeGetVariableGenes(cpm(sce), fdr = 0.01, minBiolDisp = 0.5)
+length(hvg_table$Gene)
+sce_sub=sce[as.character(hvg_table$Gene),]
 ```
 
 
 ### Dimension reduction to project data into low-dimensional embedding
 
-Dimension reduction can be used to visualize basic structure of the data or to reduce the number of features prior downstream analysis such as clustering. In contrast to the feature selection which extracts the most informative features, dimension reduction techniques projects the data into a new low-dimensional space that preserves the structure of the data. To reduce dataset dimensionality one can use PCA, tSNE or UMAP techniques implemented in **scater** package. Note that projections should be applied to normalized and log-transformed count matrices. PCA is a deterministic approach while tSNE and UMAP are stochastic - for reproducibility of tSNE and UMAP projections one has to set the seed for generating random variables.
+Dimension reduction can be used to visualize basic structure of the data or to reduce the number of features prior downstream analysis such as clustering. In contrast to the feature selection which extracts the most informative features, dimension reduction techniques projects the data into a new low-dimensional space that preserves the structure of the data. To reduce dataset dimensionality one can use previously mentioned PCA or more novel techniques such as tSNE or UMAP (all implemented in **scater** package). Note that projections should be applied to normalized and log-transformed count matrices. PCA is a deterministic approach while tSNE and UMAP are stochastic - for reproducibility of tSNE and UMAP projections one has to set the seed for generating random variables.
 
 ```{r}
 assay(sce, "logcounts") <- log2(normcounts(sce)+1) 
@@ -184,32 +202,28 @@ plotUMAP(sce, colour_by="level1class", run_args=c(exprs_values = "logcounts"))
 
 ```
 
-### Exercise
-How the projections would change if you would plot raw or CPM counts followed by log-transformation?
-
 ## Clustering
 
-To cluster cells we can use **SC3** package. **SC3** is a consensus clustering method for single-cell RNA-seq data. It first calculates distances between the cells using three metrics: Euclidean, Pearson, and Spearman. On each of the obtained distance matrix two transformations are applied: PCA and Laplacian graph. Then K-Means clustering technique is used to cluster the transformed distance matrices subject to the first d eigenvectors. In result, several individual clusterings are obtained which are further combined into a single consensus clustering using Cluster-based Similarity Partitioning Algorithm (CSPA). Note that when using **SC3**, one can first estimate the number of populations to be used in the clustering. 
+To cluster cells we can use **SC3** package. **SC3** is a consensus clustering method for single-cell RNA-seq data. It first calculates distances between the cells using three metrics: Euclidean, Pearson, and Spearman. On each of the obtained distance matrix two transformations are applied: PCA and Laplacian graph. Then K-Means clustering technique is used to cluster the transformed distance matrices subject to the first d eigenvectors. In result, several individual clusterings are obtained which are further combined into a single consensus clustering using Cluster-based Similarity Partitioning Algorithm (CSPA). 
+In this example we will use available cell annotation in the clustering inference of **SC3**. In the real life applications we usually do not know the exact number populations in the sample. Note that clustering cells with **SC3** may take a substantial amount of time.
 
 ```{r}
-sce <- sc3_estimate_k(sce)
-k_input <- metadata(sce)$sc3$k_estimation
-k_input #number of estimated clusters
-rowData(sce)$feature_symbol <- rownames(sce)
-sce <- sc3(sce, ks = k_input, gene_filter = FALSE, biology = TRUE)
-table(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]])
+# k_input=length(unique(sce$level1class))
+# rowData(sce)$feature_symbol <- rownames(sce)
+# sce <- sc3(sce, ks = k_input, gene_filter = FALSE, biology = TRUE)
+# table(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]])
 ```
 
 #### Evaluate clustering output based on annotation 
 
-If the cell annotation is available, one can measure the effectiveness of clustering output using Adjusted Rand Index (ARI). ARI index measures similarity between the partition obtained from clustering and the partition obtained from dataset annotation. The values of the ARI range can be negative if the agreement of the partitions is worse then the agreement expected by chance, or between 0 and 1 for clustering better then chance. ARI close to 1 indicate high accuracy of the method in detecting annotated cell populations. 
+If the cell annotation is available, one can measure the effectiveness of the clustering output using Adjusted Rand Index (ARI). ARI index measures similarity between the partition obtained from clustering and the partition obtained from dataset annotation. The values of the ARI range can be negative if the agreement of the partitions is worse then the agreement expected by chance, or between 0 and 1 for clustering better then chance. ARI close to 1 indicate high accuracy of the method in detecting annotated cell populations. 
 
 ```{r}
-adjustedRandIndex(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]],sce$level1class)
+# adjustedRandIndex(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]],sce$level1class)
 ```
 
 ### Exercise
-How the clustering would change if you would estimate the number of cell populations in **SC3** by using *sc3_estimate_k* function?
+How the clustering would change if you would estimate the number of cell populations in **SC3** using *sc3_estimate_k* function?
 
 ## Additional plots
 
@@ -217,70 +231,87 @@ You can use *colour_by* argument to color points in any of the above projections
 
 ```{r}
 set.seed(100)
-plotTSNE(sce, colour_by="Gad1", run_args=c(exprs_values = "logcounts")) #marker for interneurons
+plotTSNE(sce, colour_by="Gad1", run_args=c(exprs_values = "logcounts")) 
 plotExpression(sce, "Gad1", x = "level1class", colour_by = "level1class", exprs_values = "logcounts") 
 ```
 
 # Complete data analysis using Seurat package
 
-**Seurat** is an R package designed for QC, analysis, and exploration of single-cell RNA-seq data. All procedures are based on *Seurat* object which can store the information about counts and data annotation. Note that when creating new *Seurat* object one can perform cell and gene filtering based on specified thresholds. Here we set both filterings to 0, as we will input already quality controlled and filtered counts.
+**Seurat** is an R package designed for QC, analysis, and exploration of single-cell RNA-seq data. All procedures are based on *Seurat* object which can store the information about counts and dataset annotation. Note that when creating new *Seurat* object one can perform cell and gene filterings based on specified thresholds. Here we set both filterings to 0, as we will input already quality controlled and filtered counts. 
+
+Note that in *Seurat* versions <3.1.1 slot *counts* is relaced by *raw.data*, slot *min.features* is replaced by *min.genes*, and instead of *seur@assays$RNA@counts* user access the data by calling *seur@data*.
 
 ### Create Seurat object
 
 ```{r}
-seur <- CreateSeuratObject(raw.data = counts(sce), meta.data = data.frame(colData(sce)), min.cells = 0, min.genes = 0)
+seur <- CreateSeuratObject(counts = counts(sce), meta.data = data.frame(colData(sce)), min.cells = 0, min.features = 0)
 seur
+seur@assays$RNA@counts[1:4,1:4]
 ```
 
-**Seurat** also provides function to normalize data by scaling factor followed by log-transformation.  
+**Seurat** also provides function to normalize data by a scaling factor followed by log-transformation.  
 
 ```{r}
 seur <- NormalizeData(seur, normalization.method = "LogNormalize")
-seur@data[1:4,1:4]
+seur@assays$RNA@data[1:4,1:4]
 ```
 
 ### Extract highly variable genes for further analysis
 
-For extracting most informative genes one can use *FindVariableGenes* function. Similarly to other feature selection strategies *FindVariableGenes* selects informative features beased on mean / dispersion relation. 
+For extracting most informative genes one can use *FindVariableGenes* function. When using this function one can change the selection method (see help of *FindVariableGenes* function). We will use *vst* method which fits a line to the relationship of log(variance) and log(mean) using local polynomial regression (loess). Then standardizes the gene expression values using the observed mean and expected variance (given by the fitted line). Gene variance is then calculated on the standardized values after clipping to a maximum (values larger than *clip.max* will be set to *clip.max*). 
+
+Note that in *Seurat* versions <3.1.1 function *FindVariableFeatures* is relaced by *FindVariableGenes* and there is no function *VariableFeaturePlot*.
 
 ```{r}
-seur <- FindVariableGenes(object = seur)
+seur <- FindVariableFeatures(object = seur, selection.method="vst", nfeatures = 2000)
+top10 <- head(VariableFeatures(seur), 10)
+plot1 <- VariableFeaturePlot(seur)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot2
 ```
 
 ### Scale the data
-Scales and centers genes in the dataset. 
 
+For centering and scaling dataset you can use *ScaleData* function. Setting *do.center=TRUE* will center the expression for each gene to have average expression 0. Setting *do.scale=TRUE* will scale the expression for each gene by dividing the centered gene expression levels by their standard deviations (if *do.center=TRUE*), and by their root mean square otherwise.
 
 ```{r}
-seur<- Seurat::ScaleData(object = seur)
+seur <- ScaleData(object = seur, do.center = TRUE, do.scale = TRUE)
+seur@assays$RNA@scale.data[1:4,1:4]
 ```
 
 ### Reduce dataset dimension with PCA and clusterize cells
 
-
-PCA or ICA (Independent Components Analysis), both with a user-specified or the internal number of reduced dimensions (\texttt{TRUE/internal}) (the internal value is equal to the full number of features). Then, on the data reduced space, K-nearest neighbor (KNN) graph is constructed (based on the Euclidean distances between any pair of cells) and weighted by the shared overlap in the local neighborhoods of the nodes. \texttt{Seurat} to cluster cells represented in such graph structure, uses modularity detection Louvain algorithm (herein called \texttt{fixed}) that estimates the number of clusters by optimizing the modularity function \citep{pmid29608179}. 
+In this step we will perform PCA dimension reduction, build nearest neighbor graph (on the Euclidean distances between any pair of cells in the PCA space) and clusterize cells using modularity optimization technique (Louvain algorithm) that seeks densily connected modules (cell clusters) in a graph structure. Note that *FindClusters* do not require from the user to input true number of cell populations. However the clustering performance strongly depends on the *resolution* parameter that controls the size of graph communities, hence the size of the clusters (for more details see description of *FindClusters* function).  
 
 ```{r echo=T, results='hide'}
-seur <- RunPCA(object = seur, pc.genes=seur@var.genes)
-seur <- FindClusters(object = seur, reduction.type="pca")
-
+seur <- RunPCA(object = seur, pc.genes=seur@var.genes, ndims.print = 1:2, nfeatures.print = 5) #Reducing dimension with PCA
+seur <- FindNeighbors(seur) #Computing nearest neighbor graph
+seur <- FindClusters(object = seur, resolution = 0.1, algorithm = 1) #Clustering cells with modularity detection algorithm on graph
 ```
 ```{r}
-table(seur@ident)
+table(Idents(seur))
 ```
 
 ### Compare clusterization with annotated cell types
 
+We can use UMAP dimension reduction to compare the **Seurat** clustering and annotated cell populations. 
+
 ```{r}
-Seurat::DimPlot(seur, group.by = "ident", reduction.use = "pca")
-Seurat::DimPlot(seur, group.by = "level1class", reduction.use = "pca")
+seur <- RunUMAP(seur, dims = 1:10)
+DimPlot(seur, group.by = "ident", reduction.use = "umap")
+DimPlot(seur, group.by = "level1class", reduction.use = "umap")
 ```
 
 #### Compute Adjusted Rand Index 
 
+Finally, we will verify the accuracy of the clustering using ARI index.
+
 ```{r}
-adjustedRandIndex(as.numeric(seur@ident), seur@meta.data$level1class)
+adjustedRandIndex(Idents(seur), seur@meta.data$level1class)
 ```
+
+### Exercise
+How the clustering would change if you would manipulate the *resolution* parameter?
 
 # Complete data analysis using Monocle package
 
