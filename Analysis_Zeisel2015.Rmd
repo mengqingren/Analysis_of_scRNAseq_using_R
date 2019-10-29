@@ -4,7 +4,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
 ## Package loading 
@@ -239,7 +239,7 @@ plotExpression(sce, "Gad1", x = "level1class", colour_by = "level1class", exprs_
 
 **Seurat** is an R package designed for QC, analysis, and exploration of single-cell RNA-seq data. All procedures are based on *Seurat* object which can store the information about counts and dataset annotation. Note that when creating new *Seurat* object one can perform cell and gene filterings based on specified thresholds. Here we set both filterings to 0, as we will input already quality controlled and filtered counts. 
 
-Note that in *Seurat* versions <3.1.1 slot *counts* is relaced by *raw.data*, slot *min.features* is replaced by *min.genes*, and instead of *seur@assays$RNA@counts* user access the data by calling *seur@data*.
+Note that in **Seurat** versions <3.1.1 slot *counts* is relaced by *raw.data*, slot *min.features* is replaced by *min.genes*, and instead of *seur@assays$RNA@counts* user access the data by calling *seur@data*.
 
 ### Create Seurat object
 
@@ -258,9 +258,9 @@ seur@assays$RNA@data[1:4,1:4]
 
 ### Extract highly variable genes for further analysis
 
-For extracting most informative genes one can use *FindVariableGenes* function. When using this function one can change the selection method (see help of *FindVariableGenes* function). We will use *vst* method which fits a line to the relationship of log(variance) and log(mean) using local polynomial regression (loess). Then standardizes the gene expression values using the observed mean and expected variance (given by the fitted line). Gene variance is then calculated on the standardized values after clipping to a maximum (values larger than *clip.max* will be set to *clip.max*). 
+For extracting most informative genes one can use *FindVariableGenes* function. When using this function one can change the selection method (*selection.method*). We will use *vst* method which fits a line to the relationship of log(variance) and log(mean) using local polynomial regression (loess). Then standardizes the gene expression values using the observed mean and expected variance (given by the fitted line). Gene variance is then calculated on the standardized values after clipping to a maximum (*clip.max*). For more details see help of *FindVariableGenes* function. 
 
-Note that in *Seurat* versions <3.1.1 function *FindVariableFeatures* is relaced by *FindVariableGenes* and there is no function *VariableFeaturePlot*.
+Note that in **Seurat** versions <3.1.1 function *FindVariableFeatures* is relaced by *FindVariableGenes* and there is no function *VariableFeaturePlot*.
 
 ```{r}
 seur <- FindVariableFeatures(object = seur, selection.method="vst", nfeatures = 2000)
