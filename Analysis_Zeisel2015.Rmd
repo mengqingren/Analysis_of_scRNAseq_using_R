@@ -208,10 +208,10 @@ To cluster cells we can use **SC3** package. **SC3** is a consensus clustering m
 In this example we will use available cell annotation in the clustering inference of **SC3**. In the real life applications we usually do not know the exact number populations in the sample. Note that clustering cells with **SC3** may take a substantial amount of time.
 
 ```{r}
-# k_input=length(unique(sce$level1class))
-# rowData(sce)$feature_symbol <- rownames(sce)
-# sce <- sc3(sce, ks = k_input, gene_filter = FALSE, biology = TRUE)
-# table(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]])
+k_input=length(unique(sce$level1class))
+rowData(sce)$feature_symbol <- rownames(sce)
+sce <- sc3(sce, ks = k_input, gene_filter = FALSE, biology = TRUE)
+table(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]])
 ```
 
 #### Evaluate clustering output based on annotation 
@@ -219,7 +219,7 @@ In this example we will use available cell annotation in the clustering inferenc
 If the cell annotation is available, one can measure the effectiveness of the clustering output using Adjusted Rand Index (ARI). ARI index measures similarity between the partition obtained from clustering and the partition obtained from dataset annotation. The values of the ARI range can be negative if the agreement of the partitions is worse then the agreement expected by chance, or between 0 and 1 for clustering better then chance. ARI close to 1 indicate high accuracy of the method in detecting annotated cell populations. 
 
 ```{r}
-# adjustedRandIndex(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]],sce$level1class)
+adjustedRandIndex(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]],sce$level1class)
 ```
 
 ### Exercise
