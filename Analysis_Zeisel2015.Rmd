@@ -1,5 +1,6 @@
 ---
-title: "Analysis_Zeisel2015"
+title: "Analysis of scRNAseq using R"
+author: M. Krzak, A. Carissimo, D. Righelli, C. Angelini
 output:
   html_document:
     toc: true
@@ -321,7 +322,7 @@ DimPlot(seur, group.by = "ident", reduction.use = "umap")
 DimPlot(seur, group.by = "level1class", reduction.use = "umap")
 ```
 
-#### Compute Adjusted Rand Index 
+### Compute Adjusted Rand Index 
 
 Finally, we will verify the accuracy of the clustering using ARI index.
 
