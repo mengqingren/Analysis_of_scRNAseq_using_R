@@ -8,7 +8,7 @@ The example workflow stored in Analysis_Zeisel2015.Rmd file contains R commands 
 
 ### How to start
 
-First clone the repository and unzip in your local machine (remove *-master* ending of the folder). Download data folder from this link: https://drive.google.com/drive/folders/1W7EG4ySF6T74NqjAVCXRfMEdiY9bHnqN?usp=sharing, place in Analysis_of_scRNAseq_using_R directory and rename as *data*. Then run the script Analysis_Zeisel2015.Rmd to reproduce the workflow. 
+First clone the repository and unzip in your local machine. Download data folder from this link: https://drive.google.com/drive/folders/1W7EG4ySF6T74NqjAVCXRfMEdiY9bHnqN?usp=sharing, place in Analysis_of_scRNAseq_using_R directory and rename as *data*. Then run the script Analysis_Zeisel2015.Rmd to reproduce the workflow. 
 
 ### System requirements
 The analysis scripts have been tested on Ubuntu 16.04.5 LTS system with R version 3.5.1 and machine with specifications, Intel Core i7, 4.00 GHz x 8 and 24 GB RAM, which are recommended system capacities for the analysis. However, we do not exclude that analysis scripts would also run on other versions of R and lower RAM capacities.
