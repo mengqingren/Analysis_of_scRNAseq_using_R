@@ -27,14 +27,11 @@ library(scran)
 library(SC3)
 ```
 
-## The Single Cell Experiment Class
-
-![Single Cell Experiment Class Representation](images/sce.png)
-
-
 ## Data information
 
 **Zeisel2015** is a UMI-based scRNAseq dataset published in Zeisel et al. (2015) (Link to study: http://science.sciencemag.org/content/347/6226/1138) that contains the expression matrix of endogenous, spike-in and mitochondrial genes from 3005 cells from mouse cortex and hippocampus tissues. Additional metadata information are available, including cells origin, type or tissue. For the purpose of this tutorial we stored **Zeisel2015** count matrix with metadata information in two separate txt files. We can read these files and create an easy-to-work *SingleCellExperiment* experiment object. 
+
+![ ](images/sce.png)
 
 ```{r message=FALSE}
 all.counts <- read.table(file ="data/all.counts.txt",  sep = "\t")
@@ -70,12 +67,12 @@ We can use **scater** package to automatically calculate several quality metrics
 
 ```{r}
 sce <- calculateQCMetrics(sce,  feature_controls=list(Spike=is.spike, Mt=is.mito))
-colnames(colData(sce))
 ```
 
 ### Quality metrics per cell
 
 ```{r}
+colnames(colData(sce))
 colData(sce)$total_counts[1:5] #Total count for each cell
 colData(sce)$total_features_by_counts[1:5] #Number of genes with non zero counts per cell
 if(length(is.spike==TRUE)>0){colData(sce)$pct_counts_Spike[1:5]} #Percentage of spike-in counts per cell
@@ -84,6 +81,7 @@ if(length(is.spike==TRUE)>0){colData(sce)$pct_counts_Spike[1:5]} #Percentage of 
 ### Quality metrics per gene
 
 ```{r}
+colnames(rowData(sce))
 rowData(sce)$mean_counts[1:5] #Average count per gene
 rowData(sce)$n_cells_by_counts[1:5] #Number of cells with non zero counts per gene
 rowData(sce)$pct_dropout_by_counts[1:5] #Percentage of dropouts per gene
@@ -231,7 +229,7 @@ In this example we will use available cell annotation in the clustering inferenc
 ```{r}
 k_input=length(unique(sce$level1class))
 rowData(sce)$feature_symbol <- rownames(sce)
-sce <- sc3(sce, ks = k_input, gene_filter = FALSE, biology = TRUE)
+sce <- sc3(sce, ks = k_input, gene_filter = FALSE, biology = TRUE, n_cores=4)
 table(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]])
 
 assay(sce, "logcounts") <- log2(cpm(sce)+1)
