@@ -27,6 +27,10 @@ library(scran)
 library(SC3)
 ```
 
+## The Single Cell Experiment Class
+
+![Single Cell Experiment Class Representation](images/sce.png)
+
 
 ## Data information
 
