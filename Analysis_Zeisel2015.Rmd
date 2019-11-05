@@ -231,7 +231,7 @@ In this example we will use available cell annotation in the clustering inferenc
 ```{r}
 k_input=length(unique(sce$level1class))
 rowData(sce)$feature_symbol <- rownames(sce)
-sce <- sc3(sce, ks = k_input, gene_filter = FALSE, biology = TRUE)
+sce <- sc3(sce, ks = k_input, gene_filter = FALSE, biology = FALSE)
 table(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]])
 
 assay(sce, "logcounts") <- log2(cpm(sce)+1)
