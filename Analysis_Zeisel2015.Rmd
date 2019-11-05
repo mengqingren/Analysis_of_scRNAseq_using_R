@@ -226,10 +226,12 @@ plotUMAP(sce_sub, colour_by="level1class", run_args=c(exprs_values = "logcounts"
 To cluster cells we can use **SC3** package. **SC3** is a consensus clustering method for single-cell RNA-seq data. It first calculates distances between the cells using three metrics: Euclidean, Pearson, and Spearman. On each of the obtained distance matrix two transformations are applied: PCA and Laplacian graph. Then K-Means clustering technique is used to cluster the transformed distance matrices subject to the first d eigenvectors. In result, several individual clusterings are obtained which are further combined into a single consensus clustering using Cluster-based Similarity Partitioning Algorithm (CSPA). 
 In this example we will use available cell annotation in the clustering inference of **SC3**. In the real life applications we usually do not know the exact number populations in the sample. Note that clustering cells with **SC3** may take a substantial amount of time. We will visualize results on the PCA projected space.
 
+![ ](images/sc3.png)
+
 ```{r}
 k_input=length(unique(sce$level1class))
 rowData(sce)$feature_symbol <- rownames(sce)
-sce <- sc3(sce, ks = k_input, gene_filter = FALSE, biology = TRUE, n_cores=4)
+sce <- sc3(sce, ks = k_input, gene_filter = FALSE, biology = TRUE)
 table(colData(sce)[paste0("sc3_",k_input, "_clusters")][[1]])
 
 assay(sce, "logcounts") <- log2(cpm(sce)+1)
