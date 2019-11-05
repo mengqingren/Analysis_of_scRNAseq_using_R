@@ -18,18 +18,18 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 Before performing the analysis, several R-based packages should be installed on your local machine. Note that the packages may require an additional installation of other dependencies. Make sure that you have installed recommended version of the packages and your machine meets the mimimal system requirements for carrying out this analysis.  
 
 ```{r message=FALSE}
-library(scater)
-library(M3Drop)
-library(monocle)
-library(Seurat)
-library(mclust)
-library(scran)
-library(SC3)
+library(scater) #data quality control and vizualization
+library(M3Drop) #implements feature selection methods
+library(monocle) #complete data analysis: preprocessing, dimension reduction, clustering and other
+library(Seurat) #complete data analysis: QC, analysis and data exploration
+library(mclust) #implements metrics for clustering validation
+library(scran) #implements functions for data preprocessing and normalization
+library(SC3) #mainly for clustering scRNAseq data
 ```
 
 ## Data information
 
-**Zeisel2015** is a UMI-based scRNAseq dataset published in Zeisel et al. (2015) (Link to study: http://science.sciencemag.org/content/347/6226/1138) that contains the expression matrix of endogenous, spike-in and mitochondrial genes from 3005 cells from mouse cortex and hippocampus tissues. Additional metadata information are available, including cells origin, type or tissue. For the purpose of this tutorial we stored **Zeisel2015** count matrix with metadata information in two separate txt files. We can read these files and create an easy-to-work *SingleCellExperiment* experiment object. 
+**Zeisel2015** is a UMI-based scRNAseq dataset published in Zeisel et al. (2015) (Link to study: http://science.sciencemag.org/content/347/6226/1138) that contains the expression matrix of endogenous, spike-in and mitochondrial genes from 3005 cells from mouse cortex and hippocampus tissues. Additional metadata information are available, including cells origin, type or tissue. For the purpose of this tutorial we stored **Zeisel2015** count matrix with metadata information in two separate txt files that you can download from here: https://drive.google.com/drive/folders/1W7EG4ySF6T74NqjAVCXRfMEdiY9bHnqN?usp=sharing. We can read these files and create an easy-to-work *SingleCellExperiment* experiment object. 
 
 ![ ](images/sce.png)
 
@@ -92,9 +92,8 @@ rowData(sce)$pct_dropout_by_counts[1:5] #Percentage of dropouts per gene
 One can plot histograms based on quality metrics to determine possible thresholds for cell/gene filterings. We can also visualize some of the quality metrics on the PCA projected data.
 
 ```{r}
-assay(sce, "logcounts_raw") <- log2(counts(sce)+1) 
-
 hist(sce$total_counts, breaks=50,  xlab="Library size", ylab="Number of cells")
+assay(sce, "logcounts_raw") <- log2(counts(sce)+1) 
 plotPCA(sce, run_args=c(exprs_values="logcounts_raw"), size_by="total_counts")
 
 hist(sce$total_features_by_counts, xlab="Number of expressed genes", breaks=50,  ylab="Number of cells")
@@ -175,7 +174,7 @@ plotTSNE(sce, colour_by="level1class", run_args=c(exprs_values = "logcounts"))
 plotUMAP(sce, colour_by="level1class", run_args=c(exprs_values = "logcounts"))
 ```
 
-### Perform normalization using decnvolution method
+### Perform normalization using deconvolution method
 
 Another strategy, more suitable for scRNAseq data, is deconvolution method implemented in **scran** package. The deconvolution method normalizes data by cells-pooled size factors that account for dropout biases. More details about this normalization technique can be found in study https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0947-7. Similarly, we will plot PCA on the log **scran** normalized counts. 
 
@@ -238,7 +237,7 @@ assay(sce, "logcounts") <- log2(cpm(sce)+1)
 plotTSNE(sce, colour_by=paste0("sc3_",k_input, "_clusters"), run_args=c(exprs_values = "logcounts"))
 ```
 
-#### Evaluate clustering output based on annotation 
+#### Evaluate clustering based on annotation (using ARI Index) 
 
 If the cell annotation is available, one can measure the effectiveness of the clustering output using Adjusted Rand Index (ARI). ARI index measures similarity between the partition obtained from clustering and the partition obtained from dataset annotation. The values of the ARI range can be negative if the agreement of the partitions is worse then the agreement expected by chance, or between 0 and 1 for clustering better then chance. ARI close to 1 indicate high accuracy of the method in detecting annotated cell populations. 
 
@@ -257,6 +256,7 @@ You can use *colour_by* argument to color points in any of the above projections
 set.seed(100)
 plotTSNE(sce, colour_by="Gad1", run_args=c(exprs_values = "logcounts")) 
 plotExpression(sce, "Gad1", x = "level1class", colour_by = "level1class", exprs_values = "logcounts") 
+plotExpression(sce, "Gad1", x = paste0("sc3_",k_input, "_clusters")[[1]], colour_by = paste0("sc3_",k_input, "_clusters")[[1]], exprs_values = "logcounts") 
 ```
 
 # Complete data analysis using Seurat package
