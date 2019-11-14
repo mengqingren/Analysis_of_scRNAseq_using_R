@@ -14,6 +14,11 @@ First clone the repository and unzip in your local machine. Download data folder
 
 The following link contain folder with scRNAseq datasets, data description and group exercises: https://drive.google.com/open?id=1A-pTfVuE9B9-lwhnjGKHlPEw5kEpRio0. Note that .Rdata files already contain singleCellExperiment objects with expression counts and cell group annotation.
 
+### Presentation slides
+
+You can download presentation slides from this link: 
+https://www.dropbox.com/sh/xd80qvngv6cpjk5/AAAIaXp8zLZUJE4ayx9LF_WVa?dl=0
+
 
 ### System requirements
 The analysis scripts have been tested on Ubuntu 16.04.5 LTS system with R version 3.5.1 and machine with specifications, Intel Core i7, 4.00 GHz x 8 and 24 GB RAM, which are recommended system capacities for the analysis. However, we do not exclude that analysis scripts would also run on other versions of R and lower RAM capacities.
