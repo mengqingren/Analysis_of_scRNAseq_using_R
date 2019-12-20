@@ -37,3 +37,6 @@ monocle
 
 ### Contact
 Please report any bugs or issues you will encounter when using this repository. Feel free to contact monika.sonia.krzak@gmail.com for any other queries.
+
+### Copyright
+This repository was fully created by: Monika Krzak, on 2019. All rights reserved.
