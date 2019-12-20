@@ -36,4 +36,4 @@ monocle
 ```
 
 ### Contact
-Please report any bugs or issues you will encounter when using this repository. Feel free to contact m.krzak@na.iac.cnr.it for any other queries.
+Please report any bugs or issues you will encounter when using this repository. Feel free to contact monika.sonia.krzak@gmail.com for any other queries.
